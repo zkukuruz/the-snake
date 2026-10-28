@@ -12,6 +12,7 @@ INITIAL_POSITION = (
     GRID_WIDTH // 2 * GRID_SIZE,
     GRID_HEIGHT // 2 * GRID_SIZE,
 )
+APPLE_INITIAL_POSITION = (0, 0)
 
 UP = (0, -1)
 DOWN = (0, 1)
@@ -19,7 +20,6 @@ LEFT = (-1, 0)
 RIGHT = (1, 0)
 
 BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
 BOARD_BACKGROUND_COLOR = BLACK
 BORDER_COLOR = (93, 216, 228)
 APPLE_COLOR = (255, 0, 0)
@@ -74,14 +74,16 @@ class Apple(GameObject):
         self, body_color=APPLE_COLOR, occupied_positions=None
     ):
         super().__init__(
-            position=(0, 0),
+            position=APPLE_INITIAL_POSITION,
             body_color=body_color,
         )
-        self.randomize_position(occupied_positions or [])
+        self.randomize_position(occupied_positions)
 
     def randomize_position(self, occupied_positions=None):
         """Размещает яблоко в случайной свободной клетке."""
-        occupied_positions = occupied_positions or []
+        if occupied_positions is None:
+            occupied_positions = []
+
         free_positions = [
             (x * GRID_SIZE, y * GRID_SIZE)
             for x in range(GRID_WIDTH)
@@ -89,8 +91,11 @@ class Apple(GameObject):
             if (x * GRID_SIZE, y * GRID_SIZE)
             not in occupied_positions
         ]
-        if free_positions:
-            self.position = choice(free_positions)
+
+        if not free_positions:
+            raise ValueError('На поле не осталось свободных клеток.')
+
+        self.position = choice(free_positions)
 
     def draw(self):
         """Отрисовывает яблоко."""
@@ -180,7 +185,13 @@ def main():
 
         if head == apple.position:
             snake.length += 1
-            apple.randomize_position(snake.positions)
+
+            try:
+                apple.randomize_position(snake.positions)
+            except ValueError:
+                snake.reset()
+                apple.randomize_position(snake.positions)
+                screen.fill(BOARD_BACKGROUND_COLOR)
 
         elif head in snake.positions[4:]:
             snake.reset()
